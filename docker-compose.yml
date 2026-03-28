@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cortexa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cortexa
+      POSTGRES_PASSWORD: cortexa_secret
+      POSTGRES_DB: cortexa_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cortexa -d cortexa_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: cortexa-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://cortexa:cortexa_secret@postgres:5432/cortexa_db?schema=public
+      JWT_SECRET: cortexa-dev-jwt-secret-2024-change-in-prod
+      JWT_EXPIRES_IN: 7d
+      PORT: 3001
+      CORS_ORIGIN: http://localhost:5173
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
