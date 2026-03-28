@@ -26,4 +26,4 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "echo 'before migrate'; npx prisma migrate deploy; echo \"migrate exit=$?\"; echo 'before node'; ls -la dist; node dist/main.js"]
+CMD ["sh", "-c", "node dist/main.js"]
