@@ -5,6 +5,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { NotFoundError, AuthorizationError } from '../../common/errors/app.error';
 import { UPLOADS_DIR } from '../../config/upload';
 
+/** Estimate tokens from file size based on file type.
+ *  Text formats (txt/md): ~4 chars/token → size/4
+ *  Binary formats (pdf/docx/epub): binary overhead → size/8 (conservative)
+ */
+function estimateTokens(fileSize: number, ext: string): number {
+  const textTypes = new Set(['txt', 'md']);
+  const divisor = textTypes.has(ext) ? 4 : 8;
+  return Math.ceil(fileSize / divisor);
+}
+
 @Injectable()
 export class KnowledgeSourcesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -23,8 +33,9 @@ export class KnowledgeSourcesService {
   async createFromUpload(userId: string, agentId: string, file: Express.Multer.File) {
     await this.verifyAgentOwnership(userId, agentId);
     const ext = path.extname(file.originalname).replace('.', '').toLowerCase();
+    const tokenCount = estimateTokens(file.size, ext);
     return this.prisma.knowledgeSource.create({
-      data: { agentId, fileName: file.filename, originalName: file.originalname, fileType: ext, fileSize: file.size, status: 'Procesando' },
+      data: { agentId, fileName: file.filename, originalName: file.originalname, fileType: ext, fileSize: file.size, tokenCount, status: 'Procesando' },
     });
   }
 
@@ -33,8 +44,9 @@ export class KnowledgeSourcesService {
     const sources = [];
     for (const file of files) {
       const ext = path.extname(file.originalname).replace('.', '').toLowerCase();
+      const tokenCount = estimateTokens(file.size, ext);
       const source = await this.prisma.knowledgeSource.create({
-        data: { agentId, fileName: file.filename, originalName: file.originalname, fileType: ext, fileSize: file.size, status: 'Procesando' },
+        data: { agentId, fileName: file.filename, originalName: file.originalname, fileType: ext, fileSize: file.size, tokenCount, status: 'Procesando' },
       });
       sources.push(source);
     }

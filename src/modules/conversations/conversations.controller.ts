@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Delete, Param, Query, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Query, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../common/guards/jwt-auth.guard';
@@ -46,6 +46,16 @@ export class ConversationsController {
   ) {
     const conversation = await this.conversationsService.updateStatus(user.userId, id, body.status);
     return { success: true, data: conversation };
+  }
+
+  @Post(':id/messages')
+  async addMessage(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() body: { content: string },
+  ) {
+    const message = await this.conversationsService.addManualMessage(user.userId, id, body.content);
+    return { success: true, data: message };
   }
 
   @Delete(':id')

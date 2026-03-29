@@ -138,6 +138,27 @@ export class ConversationsService {
     });
   }
 
+  /** Save a manual assistant message (human-agent reply) */
+  async addManualMessage(userId: string, conversationId: string, content: string) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: { agent: { select: { userId: true } } },
+    });
+    if (!conversation) throw new NotFoundException('Conversación no encontrada');
+    if (conversation.agent.userId !== userId) throw new ForbiddenException();
+
+    const [message] = await this.prisma.$transaction([
+      this.prisma.message.create({
+        data: { conversationId, role: 'assistant', content },
+      }),
+      this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() },
+      }),
+    ]);
+    return message;
+  }
+
   /** Delete a conversation */
   async delete(userId: string, conversationId: string) {
     const conversation = await this.prisma.conversation.findUnique({

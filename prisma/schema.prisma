@@ -156,6 +156,7 @@ model KnowledgeSource {
   originalName String   @map("original_name")
   fileType     String   @map("file_type")
   fileSize     Int?     @map("file_size")
+  tokenCount   Int?     @map("token_count")
   status       String   @default("Procesando")
   uploadedAt   DateTime @default(now()) @map("uploaded_at")
 
