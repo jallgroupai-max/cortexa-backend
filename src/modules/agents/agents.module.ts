@@ -8,5 +8,6 @@ import { ConversationsModule } from '../conversations/conversations.module';
   imports: [UsageModule, ConversationsModule],
   controllers: [AgentsController],
   providers: [AgentsService],
+  exports: [AgentsService],
 })
 export class AgentsModule {}

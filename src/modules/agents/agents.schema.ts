@@ -18,15 +18,23 @@ export const createAgentSchema = z.object({
   workspaceId: z.string().uuid().optional().nullable(),
 });
 
+const contactFieldSchema = z.object({
+  key:      z.string(),
+  label:    z.string(),
+  required: z.boolean(),
+  type:     z.enum(['text', 'email', 'tel']),
+});
+
 export const updateAgentSchema = z.object({
-  name: z.string().min(1).optional(),
-  description: z.string().optional(),
-  tone: z.string().optional(),
-  color: z.string().optional(),
+  name:          z.string().min(1).optional(),
+  description:   z.string().optional(),
+  tone:          z.string().optional(),
+  color:         z.string().optional(),
   welcomeMessage: z.string().optional(),
-  prompt: z.string().optional(),
-  model: modelField.optional(),
-  workspaceId: z.string().uuid().optional().nullable(),
+  prompt:        z.string().optional(),
+  model:         modelField.optional(),
+  workspaceId:   z.string().uuid().optional().nullable(),
+  contactFields: z.array(contactFieldSchema).optional(),
 });
 
 export type CreateAgentInput = z.infer<typeof createAgentSchema>;

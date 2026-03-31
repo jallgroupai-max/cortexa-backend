@@ -8,6 +8,8 @@ import type { CreateAgentInput, UpdateAgentInput } from './agents.schema';
 import { ALLOWED_MODELS, type AllowedModel } from './agents.schema';
 import type { PaginationParams } from '../../common/pagination';
 import { getPaginationArgs } from '../../common/pagination';
+import fs from 'fs';
+import path from 'path';
 
 type SdkConfig   = { strategy: 'sdk';   envKey: string; baseURL: string; model: string };
 type FetchConfig = { strategy: 'fetch'; envKey: string; url: string;     model: string };
@@ -119,7 +121,9 @@ export class AgentsService {
     conversationOptions?: {
       conversationId?: string;
       visitorName?: string;
+      visitorEmail?: string;
       visitorId?: string;
+      contactData?: Record<string, string>;
       channel?: string;
     },
   ): Promise<{ reply: string; conversationId: string }> {
@@ -162,7 +166,9 @@ export class AgentsService {
       agent.id,
       conversationOptions?.conversationId,
       conversationOptions?.visitorName,
+      conversationOptions?.visitorEmail,
       conversationOptions?.visitorId,
+      conversationOptions?.contactData,
       conversationOptions?.channel ?? 'web',
     );
     await this.conversationsService.saveExchange(
@@ -173,6 +179,52 @@ export class AgentsService {
     );
 
     return { reply, conversationId: conversation.id };
+  }
+
+  async analyzeDocument(userId: string, filePath: string, fileExt: string): Promise<any[]> {
+    try {
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const truncated = raw.slice(0, 12000);
+
+      const prompt = `Analiza el siguiente documento y genera entre 2 y 4 sugerencias de bots especializados en español.
+
+Documento:
+${truncated}
+
+Responde ÚNICAMENTE con un JSON array válido (sin texto adicional, sin markdown). Formato exacto:
+[
+  {
+    "name": "Nombre descriptivo del bot",
+    "description": "Propósito del bot en 1-2 oraciones",
+    "tone": "amigable",
+    "color": "#7C3AED",
+    "welcomeMessage": "¡Hola! Soy [nombre] y puedo ayudarte con...",
+    "prompt": "Eres un asistente de IA llamado [nombre]. Tu función es [rol]. Solo responde usando la información de tu contexto. Tu tono es [tono]."
+  }
+]
+
+Tonos válidos: profesional, amigable, técnico, casual. Colores: usa colores variados en hex (#7C3AED, #3B82F6, #10B981, #EC4899, #F59E0B, #6366F1).`;
+
+      // Try Kimi first, fall back to Groq
+      const kimiKey = process.env['KIMI_API_KEY']?.trim();
+      const configKey: AllowedModel = kimiKey ? 'Kimi' : 'Groq';
+      const config = MODEL_CONFIGS[configKey];
+      const apiKey = process.env[config.envKey]?.trim();
+      if (!apiKey) return [];
+
+      const client = new OpenAI({ apiKey, baseURL: (config as SdkConfig).baseURL });
+      const completion = await client.chat.completions.create({
+        model: config.model,
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      const text = completion.choices[0].message.content ?? '';
+      const match = text.match(/\[[\s\S]*\]/);
+      if (!match) return [];
+      return JSON.parse(match[0]);
+    } catch {
+      return [];
+    }
   }
 
   private async chatViaSdk(

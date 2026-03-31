@@ -19,7 +19,9 @@ export class ConversationsService {
     agentId: string,
     conversationId?: string,
     visitorName?: string,
+    visitorEmail?: string,
     visitorId?: string,
+    contactData?: Record<string, string>,
     channel = 'web',
   ) {
     if (conversationId) {
@@ -31,8 +33,10 @@ export class ConversationsService {
     return this.prisma.conversation.create({
       data: {
         agentId,
-        visitorName: visitorName ?? 'Visitante',
-        visitorId: visitorId ?? null,
+        visitorName:  visitorName  ?? 'Visitante',
+        visitorEmail: visitorEmail ?? null,
+        visitorId:    visitorId    ?? null,
+        contactData:  contactData  ?? undefined,
         channel,
       },
     });

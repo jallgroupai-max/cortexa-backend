@@ -1,9 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, HttpCode, HttpStatus, BadRequestException, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AgentsService } from './agents.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../common/guards/jwt-auth.guard';
 import { paginationSchema, buildPaginatedResponse } from '../../common/pagination';
 import { CreateAgentInput, UpdateAgentInput } from './agents.schema';
+import { multerOptions } from '../../config/upload';
+import path from 'path';
+import fs from 'fs';
 
 @Controller('agents')
 export class AgentsController {
@@ -39,6 +43,20 @@ export class AgentsController {
   async remove(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     await this.agentsService.deleteAgent(user.userId, id);
     return { success: true, message: 'Agente eliminado exitosamente' };
+  }
+
+  @Post('analyze-document')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('file', multerOptions))
+  async analyzeDocument(
+    @CurrentUser() user: JwtPayload,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('Archivo requerido');
+    const ext = path.extname(file.originalname).replace('.', '').toLowerCase();
+    const suggestions = await this.agentsService.analyzeDocument(user.userId, file.path, ext);
+    try { fs.unlinkSync(file.path); } catch { /* ignore */ }
+    return { success: true, data: suggestions };
   }
 
   @Post(':id/chat')

@@ -11,10 +11,11 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   app.enableCors({
-    origin: env.CORS_ORIGIN.includes(',')
-      ? env.CORS_ORIGIN.split(',').map((o) => o.trim())
-      : env.CORS_ORIGIN,
-    credentials: true,
+    origin: (origin, callback) => {
+      // Public widget calls come from any third-party site — allow all
+      callback(null, true);
+    },
+    credentials: false,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });

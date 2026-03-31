@@ -11,6 +11,8 @@ import { BillingModule } from './modules/billing/billing.module';
 import { KnowledgeSourcesModule } from './modules/knowledge-sources/knowledge-sources.module';
 import { UsageModule } from './modules/usage/usage.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
+import { PublicModule } from './modules/public/public.module';
+import { StatsModule } from './modules/stats/stats.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -25,6 +27,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     KnowledgeSourcesModule,
     UsageModule,
     ConversationsModule,
+    PublicModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [
